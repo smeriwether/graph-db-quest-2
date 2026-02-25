@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph DB Quest — Master Graph Databases</title>
+    <meta name="description" content="An interactive learning game that teaches you graph databases through missions, quizzes, and hands-on query simulation.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Ambient background -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow--1"></div>
+    <div class="bg-glow bg-glow--2"></div>
+    <div class="bg-glow bg-glow--3"></div>
+
+    <!-- Top nav -->
+    <nav class="topnav" id="topnav">
+        <div class="topnav__brand" onclick="showScreen('home')">
+            <span class="topnav__icon">⬡</span>
+            <span class="topnav__title">Graph DB Quest</span>
+        </div>
+        <div class="topnav__links">
+            <button class="topnav__link active" data-screen="home" onclick="showScreen('home')">Missions</button>
+            <button class="topnav__link" data-screen="query-sim" onclick="showScreen('query-sim')">Query Lab</button>
+            <button class="topnav__link" data-screen="cheatsheet" onclick="showScreen('cheatsheet')">Cheat Sheet</button>
+        </div>
+        <div class="topnav__progress">
+            <div class="topnav__progress-bar" id="globalProgress"></div>
+            <span class="topnav__progress-text" id="globalProgressText">0/6</span>
+        </div>
+    </nav>
+
+    <!-- HOME / Mission Select -->
+    <main class="screen screen--home active" id="screen-home">
+        <header class="hero">
+            <div class="hero__graph" id="heroGraph"></div>
+            <div class="hero__content">
+                <h1 class="hero__title">Graph DB<br><span class="hero__accent">Quest</span></h1>
+                <p class="hero__sub">Master graph databases through 6 interactive missions.<br>From zero to expert — no database required.</p>
+                <div class="hero__stats">
+                    <div class="stat"><span class="stat__num" id="statCompleted">0</span><span class="stat__label">Completed</span></div>
+                    <div class="stat"><span class="stat__num" id="statScore">0</span><span class="stat__label">Points</span></div>
+                    <div class="stat"><span class="stat__num" id="statStreak">0</span><span class="stat__label">Streak</span></div>
+                </div>
+            </div>
+        </header>
+
+        <section class="missions" id="missionGrid">
+            <!-- Populated by JS -->
+        </section>
+    </main>
+
+    <!-- MISSION PLAY -->
+    <main class="screen screen--mission" id="screen-mission">
+        <div class="mission-header">
+            <button class="btn-back" onclick="showScreen('home')">← Back</button>
+            <div class="mission-header__info">
+                <span class="mission-header__num" id="missionNum">Mission 1</span>
+                <h2 class="mission-header__title" id="missionTitle"></h2>
+            </div>
+            <div class="mission-header__step" id="missionStep">1 / 5</div>
+        </div>
+
+        <div class="mission-body">
+            <div class="mission-viz" id="missionViz">
+                <!-- Graph visualization when applicable -->
+            </div>
+            <div class="mission-content" id="missionContent">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+
+        <div class="mission-footer">
+            <div class="mission-progress-bar">
+                <div class="mission-progress-fill" id="missionProgressFill"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- QUERY SIMULATOR -->
+    <main class="screen screen--query-sim" id="screen-query-sim">
+        <div class="qsim">
+            <div class="qsim__header">
+                <h2 class="qsim__title">Query Lab</h2>
+                <p class="qsim__sub">Build graph queries visually. Learn pattern matching and traversals.</p>
+            </div>
+            <div class="qsim__layout">
+                <div class="qsim__graph-panel">
+                    <div class="qsim__graph" id="qsimGraph"></div>
+                    <div class="qsim__graph-legend" id="qsimLegend"></div>
+                </div>
+                <div class="qsim__control-panel">
+                    <div class="qsim__scenario">
+                        <label>Scenario</label>
+                        <select id="qsimScenario" onchange="loadQueryScenario()">
+                            <option value="social">Social Network</option>
+                            <option value="movie">Movie Database</option>
+                            <option value="fraud">Fraud Detection</option>
+                        </select>
+                    </div>
+                    <div class="qsim__builder">
+                        <label>Build Your Query</label>
+                        <div class="qsim__steps" id="qsimSteps">
+                            <!-- Step builder populated by JS -->
+                        </div>
+                    </div>
+                    <div class="qsim__output">
+                        <label>Generated Cypher</label>
+                        <pre class="qsim__cypher" id="qsimCypher">// Select query steps above</pre>
+                    </div>
+                    <div class="qsim__explanation" id="qsimExplanation">
+                        <p>Choose a scenario and build a query step-by-step to see how graph traversals work.</p>
+                    </div>
+                    <button class="btn btn--primary qsim__run" id="qsimRun" onclick="runQuery()">Run Query ▶</button>
+                    <div class="qsim__results" id="qsimResults"></div>
+                </div>
+            </div>
+            <div class="qsim__challenges">
+                <h3>Query Challenges</h3>
+                <div class="qsim__challenge-list" id="qsimChallenges">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- CHEAT SHEET -->
+    <main class="screen screen--cheatsheet" id="screen-cheatsheet">
+        <div class="cheat">
+            <h2 class="cheat__title">Graph Database Cheat Sheet</h2>
+            <p class="cheat__sub">Quick reference for everything you've learned — and more.</p>
+
+            <div class="cheat__grid">
+                <!-- Core Concepts -->
+                <section class="cheat__card">
+                    <h3 class="cheat__card-title">Core Concepts</h3>
+                    <dl class="cheat__dl">
+                        <dt>Node (Vertex)</dt>
+                        <dd>An entity in the graph — a person, product, place, event. Has properties (key-value pairs) and labels (types).</dd>
+                        <dt>Edge (Relationship)</dt>
+                        <dd>A connection between two nodes. Always directed, always typed (e.g., KNOWS, PURCHASED). Can have properties.</dd>
+                        <dt>Label</dt>
+                        <dd>A tag on a node that groups it by type. A node can have multiple labels (e.g., :Person:Employee).</dd>
+                        <dt>Property</dt>
+                        <dd>Key-value data stored on nodes or edges. E.g., name: "Alice", since: 2020.</dd>
+                        <dt>Traversal</dt>
+                        <dd>Walking the graph by following relationships from node to node. The core operation of graph queries.</dd>
+                        <dt>Path</dt>
+                        <dd>A sequence of nodes and edges connecting two nodes. Can be shortest, all, or variable-length.</dd>
+                    </dl>
+                </section>
+
+                <!-- When to Use -->
+                <section class="cheat__card">
+                    <h3 class="cheat__card-title">When to Use a Graph DB</h3>
+                    <div class="cheat__list cheat__list--yes">
+                        <h4>✓ Great For</h4>
+                        <ul>
+                            <li>Social networks & relationship queries</li>
+                            <li>Recommendation engines</li>
+                            <li>Fraud detection & anti-money laundering</li>
+                            <li>Knowledge graphs & semantic search</li>
+                            <li>Network & IT infrastructure mapping</li>
+                            <li>Supply chain & logistics optimization</li>
+                            <li>Identity & access management (IAM)</li>
+                            <li>Real-time path finding & routing</li>
+                        </ul>
+                    </div>
+                    <div class="cheat__list cheat__list--no">
+                        <h4>✗ Not Ideal For</h4>
+                        <ul>
+                            <li>Simple CRUD with flat records</li>
+                            <li>Heavy aggregation / analytics (OLAP)</li>
+                            <li>Binary/blob storage</li>
+                            <li>Time-series data (use TimescaleDB, InfluxDB)</li>
+                            <li>Full-text search as primary use (use Elasticsearch)</li>
+                            <li>High-volume transactional writes with no relationships</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Cypher Basics -->
+                <section class="cheat__card cheat__card--wide">
+                    <h3 class="cheat__card-title">Cypher Query Language (Neo4j)</h3>
+                    <div class="cheat__code-grid">
+                        <div>
+                            <h4>Find nodes</h4>
+                            <pre><code>MATCH (p:Person)
+WHERE p.name = "Alice"
+RETURN p</code></pre>
+                        </div>
+                        <div>
+                            <h4>Find relationships</h4>
+                            <pre><code>MATCH (a:Person)-[:KNOWS]->(b:Person)
+RETURN a.name, b.name</code></pre>
+                        </div>
+                        <div>
+                            <h4>Variable-length paths</h4>
+                            <pre><code>MATCH path = (a)-[:KNOWS*1..3]->(b)
+WHERE a.name = "Alice"
+RETURN path</code></pre>
+                        </div>
+                        <div>
+                            <h4>Create data</h4>
+                            <pre><code>CREATE (a:Person {name: "Alice"})
+CREATE (b:Person {name: "Bob"})
+CREATE (a)-[:KNOWS {since: 2020}]->(b)</code></pre>
+                        </div>
+                        <div>
+                            <h4>Aggregation</h4>
+                            <pre><code>MATCH (p:Person)-[:KNOWS]->(friend)
+RETURN p.name, count(friend) AS friends
+ORDER BY friends DESC</code></pre>
+                        </div>
+                        <div>
+                            <h4>Shortest path</h4>
+                            <pre><code>MATCH path = shortestPath(
+  (a:Person {name:"Alice"})
+  -[:KNOWS*]->
+  (b:Person {name:"Eve"})
+)
+RETURN path</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Graph Models -->
+                <section class="cheat__card">
+                    <h3 class="cheat__card-title">Graph Data Models</h3>
+                    <dl class="cheat__dl">
+                        <dt>Property Graph (LPG)</dt>
+                        <dd>Nodes + labeled, directed edges, both with properties. Used by Neo4j, Neptune (via openCypher/Gremlin), TigerGraph. Most common model.</dd>
+                        <dt>RDF (Resource Description Framework)</dt>
+                        <dd>Triple-based: subject → predicate → object. Used for semantic web, linked data. Queried with SPARQL. Used by Neptune, GraphDB, Stardog.</dd>
+                    </dl>
+                </section>
+
+                <!-- Query Languages -->
+                <section class="cheat__card">
+                    <h3 class="cheat__card-title">Query Languages</h3>
+                    <dl class="cheat__dl">
+                        <dt>Cypher</dt>
+                        <dd>Declarative, pattern-matching language by Neo4j. ASCII-art syntax: (a)-[:REL]->(b). Most popular. Now an open standard (openCypher / GQL).</dd>
+                        <dt>Gremlin</dt>
+                        <dd>Imperative traversal language from Apache TinkerPop. g.V().has('name','Alice').out('KNOWS'). Used by Neptune, Cosmos DB, JanusGraph.</dd>
+                        <dt>SPARQL</dt>
+                        <dd>W3C standard for querying RDF graphs. SELECT ?name WHERE { ?p a :Person ; :name ?name }. Used by Neptune (RDF mode), Stardog.</dd>
+                        <dt>GQL</dt>
+                        <dd>ISO standard (2024) graph query language. Inspired by Cypher, SQL, and PGQL. Future of the space.</dd>
+                    </dl>
+                </section>
+
+                <!-- Managed Services -->
+                <section class="cheat__card cheat__card--wide">
+                    <h3 class="cheat__card-title">Managed Graph Database Services</h3>
+                    <div class="cheat__services">
+                        <div class="cheat__service">
+                            <span class="cheat__service-badge cheat__service-badge--aws">AWS</span>
+                            <h4>Amazon Neptune</h4>
+                            <p>Fully managed graph DB supporting both property graph (Gremlin, openCypher) and RDF (SPARQL). Serverless option available. Deep AWS integration (IAM, VPC, CloudWatch).</p>
+                        </div>
+                        <div class="cheat__service">
+                            <span class="cheat__service-badge cheat__service-badge--azure">Azure</span>
+                            <h4>Azure Cosmos DB (Gremlin API)</h4>
+                            <p>Multi-model database with a Gremlin-compatible graph API. Global distribution, SLA-backed. Good when you need graph alongside document/key-value in one service.</p>
+                        </div>
+                        <div class="cheat__service">
+                            <span class="cheat__service-badge cheat__service-badge--gcp">GCP</span>
+                            <h4>Neo4j Aura (via GCP Marketplace)</h4>
+                            <p>Google Cloud does not offer a native first-party graph database. Neo4j Aura is available via the GCP Marketplace for managed Cypher-based graphs. Spanner and BigQuery have some graph query features.</p>
+                        </div>
+                        <div class="cheat__service">
+                            <span class="cheat__service-badge cheat__service-badge--neo4j">Neo4j</span>
+                            <h4>Neo4j Aura</h4>
+                            <p>Fully managed Neo4j as a service. Available on AWS, GCP, and Azure marketplaces. Free tier available. Native Cypher, APOC procedures, Graph Data Science library.</p>
+                        </div>
+                        <div class="cheat__service">
+                            <span class="cheat__service-badge cheat__service-badge--tiger">TigerGraph</span>
+                            <h4>TigerGraph Cloud</h4>
+                            <p>Managed distributed graph analytics platform. GSQL query language. Strong in deep-link analytics, real-time graph analytics at scale. Available on AWS, Azure, GCP.</p>
+                        </div>
+                        <div class="cheat__service">
+                            <span class="cheat__service-badge cheat__service-badge--other">Others</span>
+                            <h4>Other Notable Options</h4>
+                            <p>ArangoDB Cloud (Oasis) — multi-model (graph + document + key-value). Dgraph Cloud — GraphQL-native graph DB. Memgraph — in-memory, Cypher-compatible, streaming-focused. JanusGraph — open-source, Gremlin-based, runs on Cassandra/HBase.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- vs Other DBs -->
+                <section class="cheat__card cheat__card--wide">
+                    <h3 class="cheat__card-title">Graph DB vs. Alternatives</h3>
+                    <div class="cheat__table-wrap">
+                        <table class="cheat__table">
+                            <thead>
+                                <tr>
+                                    <th>Criteria</th>
+                                    <th>Graph DB</th>
+                                    <th>Relational (SQL)</th>
+                                    <th>Document (MongoDB)</th>
+                                    <th>Key-Value (Redis)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Relationship queries</td>
+                                    <td class="cheat__best">Excellent — native</td>
+                                    <td>Possible via JOINs (slow at depth)</td>
+                                    <td>Manual or $lookup</td>
+                                    <td>Not applicable</td>
+                                </tr>
+                                <tr>
+                                    <td>Schema flexibility</td>
+                                    <td>Very flexible</td>
+                                    <td>Rigid schema</td>
+                                    <td class="cheat__best">Very flexible</td>
+                                    <td>Schema-free</td>
+                                </tr>
+                                <tr>
+                                    <td>Deep traversals (3+ hops)</td>
+                                    <td class="cheat__best">O(1) per hop</td>
+                                    <td>Exponential JOINs</td>
+                                    <td>Not designed for this</td>
+                                    <td>Not applicable</td>
+                                </tr>
+                                <tr>
+                                    <td>Aggregation / analytics</td>
+                                    <td>Adequate</td>
+                                    <td class="cheat__best">Excellent</td>
+                                    <td>Good with pipeline</td>
+                                    <td>Limited</td>
+                                </tr>
+                                <tr>
+                                    <td>Simple CRUD</td>
+                                    <td>Overkill</td>
+                                    <td class="cheat__best">Ideal</td>
+                                    <td>Good</td>
+                                    <td class="cheat__best">Fastest</td>
+                                </tr>
+                                <tr>
+                                    <td>Scaling pattern</td>
+                                    <td>Read replicas; some shard</td>
+                                    <td>Vertical + read replicas</td>
+                                    <td>Horizontal sharding</td>
+                                    <td>Horizontal + cluster</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Key Algorithms -->
+                <section class="cheat__card">
+                    <h3 class="cheat__card-title">Key Graph Algorithms</h3>
+                    <dl class="cheat__dl">
+                        <dt>Shortest Path (Dijkstra)</dt>
+                        <dd>Find minimum-cost path between nodes. Used in routing, network analysis.</dd>
+                        <dt>PageRank</dt>
+                        <dd>Rank node importance by link structure. Used in search, influence scoring.</dd>
+                        <dt>Community Detection (Louvain)</dt>
+                        <dd>Find clusters/groups in graphs. Used in social network analysis, market segmentation.</dd>
+                        <dt>Betweenness Centrality</dt>
+                        <dd>Identify bridge nodes that connect communities. Used in network resilience, influence analysis.</dd>
+                        <dt>Node Similarity</dt>
+                        <dd>Measure how similar two nodes are based on neighborhoods. Used in recommendations.</dd>
+                    </dl>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mission Complete overlay -->
+    <div class="overlay" id="overlay-complete">
+        <div class="overlay__card">
+            <div class="overlay__icon">⬡</div>
+            <h2 class="overlay__title" id="completeTitle">Mission Complete!</h2>
+            <p class="overlay__text" id="completeText"></p>
+            <div class="overlay__score">
+                <span class="overlay__score-num" id="completeScore">0</span>
+                <span class="overlay__score-label">Points Earned</span>
+            </div>
+            <div class="overlay__actions">
+                <button class="btn btn--primary" onclick="closeOverlay(); showScreen('home');">Back to Missions</button>
+                <button class="btn btn--secondary" id="nextMissionBtn" onclick="startNextMission()">Next Mission →</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
